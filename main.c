@@ -1,3 +1,17 @@
+/*
+Copyright (C) 2022 by Melan Jayasinghage <melan@apache.org>
+
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+ */
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -6,101 +20,101 @@
 
 #define BLOCK 255
 
-
 typedef struct {
-  size_t len;
-  char *buffer;
-  int append_len;
-  char *append;
+    size_t len;
+    char *buffer;
+    int append_len;
+    char *append;
 } STRBUF;
 
 int is_leaf(xmlNode *node) {
-  xmlNode *child = node->children;
-  while (child) {
-    if (child->type == XML_ELEMENT_NODE) return 0;
+    xmlNode *child = node->children;
+    while (child) {
+        if (child->type == XML_ELEMENT_NODE) return 0;
 
-    child = child->next;
-  }
+        child = child->next;
+    }
 
-  return 1;
+    return 1;
 }
 
-char* strupr(char* s){
-    char* tmp = s;
-    for (;*tmp;++tmp) {
+char *strupr(char *s) {
+    char *tmp = s;
+    for (; *tmp; ++tmp) {
         *tmp = toupper((unsigned char) *tmp);
     }
     return s;
 }
 
-char* strrpc(char *str, char *orig, char *rep)
-{
-  static char buffer[BLOCK];
-  char *p;
+char *strrpc(char *str, char *orig, char *rep) {
+    static char buffer[BLOCK];
+    char *p;
 
-  if(!(p = strstr(str, orig)))
-    return str;
+    if (!(p = strstr(str, orig)))
+        return str;
 
-  strncpy(buffer, str, p-str);
-  buffer[p-str] = '\0';
+    strncpy(buffer, str, p - str);
+    buffer[p - str] = '\0';
 
-  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+    sprintf(buffer + (p - str), "%s%s", rep, p + strlen(orig));
 
-  return buffer;
+    return buffer;
 }
 
 void find_widgets(xmlNode *node, STRBUF *declare_buf, STRBUF *init_buf, STRBUF *signal_buf) {
-  while (node) {
-    if (node->type == XML_ELEMENT_NODE) {
+    while (node) {
+        if (node->type == XML_ELEMENT_NODE) {
 
-      if (!is_leaf(node)) {
-        char *id = (char *) xmlGetProp(node, "id");
-        char *class = (char *) xmlGetProp(node, "class");
-        if (xmlGetProp(node, "id") != NULL && xmlGetProp(node, "class") != NULL) {
+            if (!is_leaf(node)) {
+                char *id = (char *) xmlGetProp(node, "id");
+                char *class = (char *) xmlGetProp(node, "class");
+                if (id != NULL && class != NULL) {
 
-          declare_buf->append = declare_buf->buffer + declare_buf->append_len;
-          declare_buf->append_len += sprintf(declare_buf->append, "%s *%s;\n", class, id);
-          if ((declare_buf->len - declare_buf->append_len) < BLOCK) {
-            declare_buf->len += BLOCK;
-            declare_buf->buffer = realloc(declare_buf->buffer, declare_buf->len);
-          }
-          
-          init_buf->append = init_buf->buffer + init_buf->append_len;
-          init_buf->append_len += sprintf(init_buf->append, "\t%s = %s(gtk_builder_get_object(builder, \"%s\"));\n", id, strrpc(strupr(class),"GTK","GTK_"), id);
-          if ((init_buf->len - init_buf->append_len) < BLOCK) {
-            init_buf->len += BLOCK;
-            init_buf->buffer = realloc(init_buf->buffer, init_buf->len);
-          }
-          
-          xmlNode *child = node->children;
-          while (child) {
-          	if (child->type == XML_ELEMENT_NODE && !xmlStrcmp(child->name, (const xmlChar *)"signal")){
-          		signal_buf->append = signal_buf->buffer + signal_buf->append_len;
-          		signal_buf->append_len += sprintf(signal_buf->append, "void %s (%s *e){\n\n}\n", xmlGetProp(child, "handler"), xmlGetProp(node, "class"));
-          		if ((signal_buf->len - signal_buf->append_len) < BLOCK) {
-          			signal_buf->len += BLOCK;
-          			signal_buf->buffer = realloc(signal_buf->buffer, signal_buf->len);
-          		}
-          	}
-          	child = child->next;
-          }
+                    declare_buf->append = declare_buf->buffer + declare_buf->append_len;
+                    declare_buf->append_len += sprintf(declare_buf->append, "%s *%s;\n", class, id);
+                    if ((declare_buf->len - declare_buf->append_len) < BLOCK) {
+                        declare_buf->len += BLOCK;
+                        declare_buf->buffer = realloc(declare_buf->buffer, declare_buf->len);
+                    }
 
+                    init_buf->append = init_buf->buffer + init_buf->append_len;
+                    init_buf->append_len += sprintf(init_buf->append,
+                                                    "\t%s = %s(gtk_builder_get_object(builder, \"%s\"));\n", id,
+                                                    strrpc(strupr(class), "GTK", "GTK_"), id);
+                    if ((init_buf->len - init_buf->append_len) < BLOCK) {
+                        init_buf->len += BLOCK;
+                        init_buf->buffer = realloc(init_buf->buffer, init_buf->len);
+                    }
+
+                    xmlNode *child = node->children;
+                    while (child) {
+                        if (child->type == XML_ELEMENT_NODE && !xmlStrcmp(child->name, (const xmlChar *) "signal")) {
+                            signal_buf->append = signal_buf->buffer + signal_buf->append_len;
+                            signal_buf->append_len += sprintf(signal_buf->append, "void %s (%s *e){\n\n}\n",
+                                                              xmlGetProp(child, "handler"), xmlGetProp(node, "class"));
+                            if ((signal_buf->len - signal_buf->append_len) < BLOCK) {
+                                signal_buf->len += BLOCK;
+                                signal_buf->buffer = realloc(signal_buf->buffer, signal_buf->len);
+                            }
+                        }
+                        child = child->next;
+                    }
+
+                }
+                xmlFree(id);
+                xmlFree(class);
+            }
         }
-        xmlFree(id);
-        xmlFree(class);
-      }
+        find_widgets(node->children, declare_buf, init_buf, signal_buf);
+        node = node->next;
     }
-    find_widgets(node->children, declare_buf, init_buf, signal_buf);
-    node = node->next;
-  }
 }
 
-void generate_code(char *filename, char *declare_buf, char *init_buf, char *signal_buf ){
+void generate_code(char *filename, char *declare_buf, char *init_buf, char *signal_buf) {
     char *target_file = strrpc(strrpc(filename, ".xml", ".c"), ".glade", ".c");
-    FILE * fPtr = fopen(target_file, "w");
+    FILE *fPtr = fopen(target_file, "w");
 
-    if(fPtr == NULL)
-    {
+    if (fPtr == NULL) {
         printf("Unable to create file.\n");
     }
     //TODO: implement proper template based code generation
@@ -138,45 +152,44 @@ void generate_code(char *filename, char *declare_buf, char *init_buf, char *sign
 
 int main(int argc, char **argv) {
 
-  if (argc <= 1) {
-    printf("Usage: %s <Glade XML file> \n", argv[0]);
-    return(0);
-  }
+    if (argc <= 1) {
+        printf("Usage: %s <Glade XML file> \n", argv[0]);
+        return (0);
+    }
 
-  STRBUF declare_buf;
-  declare_buf.len = BLOCK;
-  declare_buf.buffer = (char *) malloc(declare_buf.len);
-  declare_buf.append_len = 0;
-  declare_buf.append = declare_buf.buffer;
-  
-  STRBUF init_buf;
-  init_buf.len = BLOCK;
-  init_buf.buffer = (char *) malloc(init_buf.len);
-  init_buf.append_len = 0;
-  init_buf.append = init_buf.buffer;
-  
-  STRBUF signal_buf;
-  signal_buf.len = BLOCK;
-  signal_buf.buffer = (char *) malloc(signal_buf.len);
-  signal_buf.append_len = 0;
-  signal_buf.append = signal_buf.buffer;
-  
+    STRBUF declare_buf;
+    declare_buf.len = BLOCK;
+    declare_buf.buffer = (char *) malloc(declare_buf.len);
+    declare_buf.append_len = 0;
+    declare_buf.append = declare_buf.buffer;
 
-  xmlDoc *doc = NULL;
-  xmlNode *root_element = NULL;
+    STRBUF init_buf;
+    init_buf.len = BLOCK;
+    init_buf.buffer = (char *) malloc(init_buf.len);
+    init_buf.append_len = 0;
+    init_buf.append = init_buf.buffer;
 
-  doc = xmlReadFile(argv[1], NULL, 0);
+    STRBUF signal_buf;
+    signal_buf.len = BLOCK;
+    signal_buf.buffer = (char *) malloc(signal_buf.len);
+    signal_buf.append_len = 0;
+    signal_buf.append = signal_buf.buffer;
 
-  if (doc == NULL) {
-    printf("Could not parse the XML file");
-  }
+    xmlDoc *doc = NULL;
+    xmlNode *root_element = NULL;
 
-  root_element = xmlDocGetRootElement(doc);
-  find_widgets(root_element, &declare_buf, &init_buf, &signal_buf);
+    doc = xmlReadFile(argv[1], NULL, 0);
 
-  generate_code(argv[1], declare_buf.buffer, init_buf.buffer, signal_buf.buffer);
+    if (doc == NULL) {
+        printf("Could not parse the XML file");
+    }
 
-  xmlFreeDoc(doc);
-  xmlCleanupParser();
+    root_element = xmlDocGetRootElement(doc);
+    find_widgets(root_element, &declare_buf, &init_buf, &signal_buf);
+
+    generate_code(argv[1], declare_buf.buffer, init_buf.buffer, signal_buf.buffer);
+
+    xmlFreeDoc(doc);
+    xmlCleanupParser();
 }
 
