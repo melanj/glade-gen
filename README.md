@@ -12,10 +12,10 @@ Gladegen is a program written in C that takes a Glade XML file and generates ske
 
 ### Installation
 
-use the Makefile to build the executable and gladegen to the system path. 
+use the Makefile to build the executable and add `gladegen` to the system path. 
 
 ### Usage
-Open a terminal, change the directory to a glade file location and run the gladegen as follows. source code will generate in the same directory. 
+Open a terminal, change the directory to a glade file location and run the `gladegen` as follows. source code will generate in the same directory. 
    ```sh
    gladegen <Glade XML file>
    ```
