@@ -66,7 +66,7 @@ void find_widgets(xmlNode *node, STRBUF *declare_buf, STRBUF *init_buf, STRBUF *
           }
           
           init_buf->append = init_buf->buffer + init_buf->append_len;
-          init_buf->append_len += sprintf(init_buf->append, "%s = %s(gtk_builder_get_object(builder, \"%s\"));\n", id, strrpc(strupr(class),"GTK","GTK_"), id);
+          init_buf->append_len += sprintf(init_buf->append, "\t%s = %s(gtk_builder_get_object(builder, \"%s\"));\n", id, strrpc(strupr(class),"GTK","GTK_"), id);
           if ((init_buf->len - init_buf->append_len) < BLOCK) {
             init_buf->len += BLOCK;
             init_buf->buffer = realloc(init_buf->buffer, init_buf->len);
@@ -76,7 +76,7 @@ void find_widgets(xmlNode *node, STRBUF *declare_buf, STRBUF *init_buf, STRBUF *
           while (child) {
           	if (child->type == XML_ELEMENT_NODE && !xmlStrcmp(child->name, (const xmlChar *)"signal")){
           		signal_buf->append = signal_buf->buffer + signal_buf->append_len;
-          		signal_buf->append_len += sprintf(signal_buf->append, "void %s (%s *e){\n\n}\n", xmlGetProp(child, "handler"), class);
+          		signal_buf->append_len += sprintf(signal_buf->append, "void %s (%s *e){\n\n}\n", xmlGetProp(child, "handler"), xmlGetProp(node, "class"));
           		if ((signal_buf->len - signal_buf->append_len) < BLOCK) {
           			signal_buf->len += BLOCK;
           			signal_buf->buffer = realloc(signal_buf->buffer, signal_buf->len);
@@ -93,6 +93,47 @@ void find_widgets(xmlNode *node, STRBUF *declare_buf, STRBUF *init_buf, STRBUF *
     find_widgets(node->children, declare_buf, init_buf, signal_buf);
     node = node->next;
   }
+}
+
+void generate_code(char *filename, char *declare_buf, char *init_buf, char *signal_buf ){
+    char *target_file = strrpc(strrpc(filename, ".xml", ".c"), ".glade", ".c");
+    FILE * fPtr = fopen(target_file, "w");
+
+    if(fPtr == NULL)
+    {
+        printf("Unable to create file.\n");
+    }
+    //TODO: implement proper template based code generation
+    fputs("//generate from ", fPtr);
+    fputs(filename, fPtr);
+    fputs("\n", fPtr);
+    fputs("#include <signal.h>\n", fPtr);
+    fputs("#include <gtk/gtk.h>\n", fPtr);
+    fputs("\n", fPtr);
+    fputs("//widget declarations\n", fPtr);
+    fputs(declare_buf, fPtr);
+    fputs("//builder declaration\n", fPtr);
+    fputs("GtkBuilder *builder;\n", fPtr);
+    fputs("\n", fPtr);
+    fputs("int main(int argc, char *argv[]) {\n\n", fPtr);
+    fputs("\tgtk_init(&argc, &argv);\n\n", fPtr);
+    fputs("\tbuilder = gtk_builder_new_from_file (\"", fPtr);
+    fputs(filename, fPtr);
+    fputs("\");\n", fPtr);
+    fputs("\tgtk_builder_connect_signals(builder, NULL);\n\n", fPtr);
+    fputs("\t//widget initialization\n", fPtr);
+    fputs(init_buf, fPtr);
+    fputs("\n", fPtr);
+    fputs("\tg_signal_connect(window, \"destroy\", G_CALLBACK(gtk_main_quit), NULL);\n", fPtr);
+    fputs("\tgtk_widget_show(GTK_WIDGET(window));\n", fPtr);
+    fputs("\tgtk_main();\n\n", fPtr);
+    fputs("\treturn EXIT_SUCCESS;\n", fPtr);
+    fputs("}\n", fPtr);
+    fputs("\n", fPtr);
+    fputs("//signals\n", fPtr);
+    fputs(signal_buf, fPtr);
+    fclose(fPtr);
+    printf("generated %s\n", target_file);
 }
 
 int main(int argc, char **argv) {
@@ -133,10 +174,7 @@ int main(int argc, char **argv) {
   root_element = xmlDocGetRootElement(doc);
   find_widgets(root_element, &declare_buf, &init_buf, &signal_buf);
 
-  //TODO: implement source file generation 
-  printf("declaration definitions:\n\n%s\n", declare_buf.buffer);
-  printf("init definitions:\n\n%s\n", init_buf.buffer);
-  printf("signal definitions:\n\n%s\n", signal_buf.buffer);
+  generate_code(argv[1], declare_buf.buffer, init_buf.buffer, signal_buf.buffer);
 
   xmlFreeDoc(doc);
   xmlCleanupParser();

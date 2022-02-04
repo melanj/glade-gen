@@ -1,10 +1,14 @@
+CC = gcc
+CFLAGS = `xml2-config --cflags`
+LDFLAGS = `xml2-config --libs`
+
 all : gladegen
 
 gladegen : main.o
-	gcc -o gladegen main.o `xml2-config --libs` 
+	$(CC) -o gladegen main.o $(LDFLAGS)
 
 main.o : main.c
-	gcc -c main.c `xml2-config --cflags`
+	$(CC) $(CFLAGS) -c main.c
 
 clean :
 	rm gladegen *.o
