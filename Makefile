@@ -17,11 +17,11 @@ LDFLAGS = `xml2-config --libs`
 
 all : gladegen
 
-gladegen : main.o
-	$(CC) -o gladegen main.o $(LDFLAGS)
+gladegen : main.o util.o
+	$(CC) -o gladegen main.o util.o $(LDFLAGS)
 
-main.o : main.c
-	$(CC) $(CFLAGS) -c main.c
+%.o : %.c
+		$(CC) -c $(CFLAGS)  $< -o $@
 
 clean :
 	rm gladegen *.o

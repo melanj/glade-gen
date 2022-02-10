@@ -12,54 +12,11 @@ OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
  */
-#include <ctype.h>
 #include <stdio.h>
-#include <string.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+#include "util.h"
 
-#define BLOCK 255
-
-typedef struct {
-    size_t len;
-    char *buffer;
-    int append_len;
-    char *append;
-} STRBUF;
-
-int is_leaf(xmlNode *node) {
-    xmlNode *child = node->children;
-    while (child) {
-        if (child->type == XML_ELEMENT_NODE) return 0;
-
-        child = child->next;
-    }
-
-    return 1;
-}
-
-char *strupr(char *s) {
-    char *tmp = s;
-    for (; *tmp; ++tmp) {
-        *tmp = toupper((unsigned char) *tmp);
-    }
-    return s;
-}
-
-char *strrpc(char *str, char *orig, char *rep) {
-    static char buffer[BLOCK];
-    char *p;
-
-    if (!(p = strstr(str, orig)))
-        return str;
-
-    strncpy(buffer, str, p - str);
-    buffer[p - str] = '\0';
-
-    sprintf(buffer + (p - str), "%s%s", rep, p + strlen(orig));
-
-    return buffer;
-}
 
 void find_widgets(xmlNode *node, STRBUF *declare_buf, STRBUF *init_buf, STRBUF *signal_buf) {
     while (node) {
