@@ -10,9 +10,36 @@ Gladegen is a program written in C that takes a Glade XML file and generates ske
 * gcc (or compilable)
 * libxml2-dev
 
+### Install prerequisites
+You can install libxml2-dev (or its equivalent) based on your Linux distribution:  
+
+Debian/Ubuntu-based distributions  
+
+   ```sh
+   sudo apt-get install libxml2-dev
+   ```
+RPM-based distributions
+Use dnf (or yum on older versions):
+
+   ```sh
+   sudo dnf install libxml2-devel
+   ```
+
+
 ### Installation
 
 use the Makefile to build the executable and add `gladegen` to the system path. 
+e.g
+
+   ```sh
+   make
+   ```
+
+or if you wants to rebuild everything, regardless of timestamps
+
+   ```sh
+   make -B all
+   ```
 
 ### Usage
 Open a terminal, change the directory to a glade file location and run the `gladegen` as follows. source code will generate in the same directory. 
